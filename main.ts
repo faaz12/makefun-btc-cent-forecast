@@ -84,15 +84,24 @@ const price5 = (x: number): number => Math.round(Math.min(MAX_PRICE, Math.max(MI
 function clean(prices: number[]): number[] {
   const out: number[] = [];
   let lastGood: number | null = null;
+  let badHead = 0;
   for (const p of prices) {
     if (typeof p === 'number' && Number.isFinite(p) && p > 0) {
       lastGood = p;
       out.push(p);
     } else if (lastGood !== null) {
       out.push(lastGood);
+    } else {
+      // No good value yet: count it, backfilled below.
+      badHead++;
     }
   }
   if (out.length === 0) return out;
+  // Backfill a bad head from the first good value, so the cleaned series
+  // keeps the input's minute alignment: the 240-minute return and the 24h
+  // mean are measured in minutes back from the checkpoint, and dropping
+  // head minutes would shorten the window they are measured over.
+  if (badHead > 0) return Array<number>(badHead).fill(out[0] as number).concat(out);
   return out;
 }
 
